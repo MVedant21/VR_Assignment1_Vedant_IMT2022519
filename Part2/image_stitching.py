@@ -116,4 +116,3 @@ def process_directory(src_folder, dest_folder):
 
 
 process_directory("input1", "output")
-# process_directory("input2", "output")

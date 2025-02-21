@@ -49,15 +49,41 @@ def store_images(output_img, shapes, save_path, draw_type="outline"):  # Save pr
     
     cv2.imwrite(save_path, result_img)
 
+def extract_each_coin(image, circle_coins, output_dir):    # Extract each coin from the given image
+    segmented_coins = []
+    
+    for i, cnt in enumerate(circle_coins):
+        (x, y), radius = cv2.minEnclosingCircle(cnt)  # Minimum enclosing circle
+        center = (int(x), int(y))  # Center of circle
+        radius = int(radius)  # Radius
+        
+        mask = np.zeros_like(image, dtype=np.uint8)
+        cv2.circle(mask, center, radius, (255, 255, 255), -1) 
+        coin_segment = cv2.bitwise_and(image, mask)  # Mask applied to extract the coin
+        
+        x1, y1 = center[0] - radius, center[1] - radius
+        x2, y2 = center[0] + radius, center[1] + radius  # Crop area for circular coin region
+        coin_segment = coin_segment[y1:y2, x1:x2]  # Coins area cropped
+        segmented_coins.append(coin_segment)
+        
+        coin_path = os.path.join(output_dir, f"coin_{i+1}.jpg")
+        cv2.imwrite(coin_path, coin_segment)
+    
+    return segmented_coins
+
 def batch_process(input_dir, output_dir):  # Handle multiple images
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
     for file in os.listdir(input_dir):
-        if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+        if file.lower().endswith((".png", ".jpg", ".jpeg")):
             input_path = os.path.join(input_dir, file)
             outline_output = os.path.join(output_dir, f"{os.path.splitext(file)[0]}_outline.jpg")
             mask_output = os.path.join(output_dir, f"{os.path.splitext(file)[0]}_segmented.jpg")
+            coin_output_dir = os.path.join(output_dir, f"{os.path.splitext(file)[0]}_coins")
+            
+            if not os.path.exists(coin_output_dir):
+                os.makedirs(coin_output_dir)
             
             processed_img, threshold_img, scale_factor = load_and_prepare(input_path)
             if processed_img is None:
@@ -67,6 +93,7 @@ def batch_process(input_dir, output_dir):  # Handle multiple images
             store_images(processed_img, detected_shapes, outline_output, draw_type="outline")
             store_images(processed_img, detected_shapes, mask_output, draw_type="mask")
             
+            extract_each_coin(processed_img, detected_shapes, coin_output_dir)
             print(f"{file}: Objects detected = {len(detected_shapes)}")
 
 batch_process("input", "output")
