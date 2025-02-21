@@ -74,5 +74,4 @@ pip install numpy opencv-python
 ├── README.md              # Project documentation
 ```
 
-## License
-This project is open-source and available under the MIT License.
+Further details on the methodology, output images and analysis are discussed in the report.
